@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const prisma = require("./lib/prisma");
 
 app.use(express.json());
 
@@ -18,4 +19,14 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
 });
