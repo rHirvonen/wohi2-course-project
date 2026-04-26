@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../lib/prisma");
+const authenticate = require("../middleware/auth");
+const isOwner = require("../middleware/isOwner");
+
+
+router.use(authenticate);
 
 function formatQuestion(question) {
   return {
@@ -24,7 +29,6 @@ router.get("/", async (req, res) => {
   res.json(questions.map(formatQuestion));
 });
 
-
 router.get("/:qId", async (req, res) => {
   const qId = Number(req.params.qId);
 
@@ -42,7 +46,6 @@ router.get("/:qId", async (req, res) => {
   res.json(formatQuestion(question));
 });
 
-
 router.post("/", async (req, res) => {
   const { title, content, date, keywords } = req.body;
 
@@ -55,6 +58,7 @@ router.post("/", async (req, res) => {
   const newQuestion = await prisma.post.create({
     data: {
       title,
+      userId: req.user.userId,
       content,
       date: new Date(date),
       keywords: {
@@ -71,7 +75,7 @@ router.post("/", async (req, res) => {
 });
 
 
-router.put("/:qId", async (req, res) => {
+router.put("/:qId", isOwner, async (req, res) => {
   const qId = Number(req.params.qId);
 
   const { title, content, date } = req.body;
@@ -90,7 +94,7 @@ router.put("/:qId", async (req, res) => {
 });
 
 
-router.delete("/:qId", async (req, res) => {
+router.delete("/:qId", isOwner, async (req, res) => {
   const qId = Number(req.params.qId);
 
   const deletedQuestion = await prisma.post.delete({
@@ -102,6 +106,5 @@ router.delete("/:qId", async (req, res) => {
     question: formatQuestion(deletedQuestion),
   });
 });
-
 
 module.exports = router;
