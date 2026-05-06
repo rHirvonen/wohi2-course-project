@@ -1,0 +1,16 @@
+info:
+  name: Kuva
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:3000/api/questions
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+​

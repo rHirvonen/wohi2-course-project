@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id       Int       @id @default(autoincrement())
+  title    String    @db.VarChar(255)
+  date     DateTime
+  content  String    @db.Text
+  imageUrl String?   @db.VarChar(255)
+
+  keywords Keyword[]
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id])
+
+  attempts Attempt[]
+
+  @@map("posts")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique @db.VarChar(255)
+  password String @db.VarChar(255)
+  name     String @db.VarChar(100)
+
+  posts    Post[]
+  attempts Attempt[]
+}
+
+model Keyword {
+  id    Int    @id @default(autoincrement())
+  name  String @unique @db.VarChar(100)
+
+  posts Post[]
+
+  @@map("keywords")
+}
+
+model Attempt {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  userId Int
+  postId Int
+  correct Boolean
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])   
+  @@map("attempts")
+}
