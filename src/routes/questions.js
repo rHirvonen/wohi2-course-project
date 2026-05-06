@@ -7,9 +7,7 @@ const upload = require("../middleware/upload");
 
 router.use(authenticate);
 
-// =====================
-// HELPERS
-// =====================
+
 function parseKeywords(keywords) {
   if (Array.isArray(keywords)) return keywords;
 
@@ -23,6 +21,8 @@ function parseKeywords(keywords) {
   return [];
 }
 
+
+
 function formatQuestions(post) {
   return {
     id: post.id,
@@ -34,14 +34,12 @@ function formatQuestions(post) {
     keywords: post.keywords?.map((k) => k.name) || [],
     userName: post.user?.name || null,
 
-    // 🔥 TÄRKEÄ FIX: frontend osaa nyt lukea solved oikein
+    
     attempts: post.attempts || [],
   };
 }
 
-// =====================
-// GET ALL
-// =====================
+
 router.get("/", async (req, res) => {
   const { keyword } = req.query;
 
@@ -59,7 +57,7 @@ router.get("/", async (req, res) => {
       include: {
         keywords: true,
         user: true,
-        attempts: true, // 🔥 TÄRKEIN FIX
+        attempts: true, 
       },
       orderBy: { id: "asc" },
       skip,
@@ -77,9 +75,7 @@ router.get("/", async (req, res) => {
   });
 });
 
-// =====================
-// GET ONE
-// =====================
+
 router.get("/:qId", async (req, res) => {
   const qId = Number(req.params.qId);
 
@@ -99,9 +95,7 @@ router.get("/:qId", async (req, res) => {
   res.json(formatQuestions(question));
 });
 
-// =====================
-// CREATE QUESTION
-// =====================
+
 router.post("/", upload.single("image"), async (req, res) => {
   console.log("BODY:", req.body);
   console.log("FILE:", req.file);
@@ -140,9 +134,7 @@ router.post("/", upload.single("image"), async (req, res) => {
   res.status(201).json(formatQuestions(newQuestion));
 });
 
-// =====================
-// UPDATE
-// =====================
+
 router.put("/:qId", upload.single("image"), isOwner, async (req, res) => {
   const qId = Number(req.params.qId);
   const { question, answer, date } = req.body;
@@ -175,9 +167,7 @@ router.put("/:qId", upload.single("image"), isOwner, async (req, res) => {
   res.json(formatQuestions(updatedQuestion));
 });
 
-// =====================
-// DELETE
-// =====================
+
 router.delete("/:qId", isOwner, async (req, res) => {
   const qId = Number(req.params.qId);
 
@@ -192,9 +182,7 @@ router.delete("/:qId", isOwner, async (req, res) => {
   });
 });
 
-// =====================
-// PLAY
-// =====================
+
 router.post("/:qId/play", async (req, res) => {
   const qId = Number(req.params.qId);
   const { answer } = req.body;
