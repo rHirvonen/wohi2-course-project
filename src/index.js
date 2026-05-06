@@ -6,22 +6,24 @@ const path = require("path");
 
 app.use(express.json());
 
-// frontend
+
+
 app.use(express.static(path.join(__dirname, "..", "public")));
 
-// 🔥 FIX 1: uploads oikein näkyviin
+
+
 app.use("/uploads", express.static(path.join(__dirname, "..", "public", "uploads")));
 
 // routes
 app.use("/api/questions", require("./routes/questions"));
 app.use("/api/auth", require("./routes/auth"));
 
-// homepage
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "index.html"));
 });
 
-// error handler
+
 app.use((err, req, res, next) => {
   if (
     err instanceof multer.MulterError ||
@@ -32,7 +34,7 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// fallback
+
 app.use((req, res) => {
   res.json({ msg: "Not found" });
 });
