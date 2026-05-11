@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:setup": "cross-env DATABASE_URL=mysql://wohii:soc@localhost:3306/cms_test npx prisma migrate deploy",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "express",
@@ -19,5 +23,8 @@
     "bcrypt": "^6.0.0",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
   }
 }
