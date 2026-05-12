@@ -12,6 +12,12 @@ const app = express();
 
 const publicPath = path.resolve(__dirname, "..", "public");
 
+const fs = require("fs");
+
+console.log("PUBLIC PATH:", publicPath);
+console.log("PUBLIC EXISTS:", fs.existsSync(publicPath));
+console.log("INDEX EXISTS:", fs.existsSync(path.join(publicPath, "index.html")));
+
 app.use(
   pinoHttp({
     logger,

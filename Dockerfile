@@ -5,12 +5,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-COPY prisma ./prisma
-RUN npx prisma generate --schema=./prisma/schema.prisma
-
 COPY . .
 
+RUN npx prisma generate
+
 ENV NODE_ENV=production
+
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
