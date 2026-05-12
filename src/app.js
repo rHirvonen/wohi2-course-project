@@ -14,6 +14,7 @@ const app = express();
 const publicPath = path.join(process.cwd(), "public");
 
 
+console.log("APP.JS IS RUNNING");
 console.log("PUBLIC PATH:", publicPath);
 console.log("PUBLIC EXISTS:", fs.existsSync(publicPath));
 console.log("INDEX EXISTS:", fs.existsSync(path.join(publicPath, "index.html")));
@@ -30,15 +31,19 @@ app.use(
 app.use(express.json());
 
 
-app.use(express.static(publicPath));
+app.use("/", express.static(publicPath));
 
 
 app.use("/api/auth", authRouter);
 app.use("/api/questions", questionsRouter);
 
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
+app.get("/", (req, res, next) => {
+  const file = path.join(publicPath, "index.html");
+
+  res.sendFile(file, (err) => {
+    if (err) next(err);
+  });
 });
 
 
