@@ -9,6 +9,9 @@ const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
+
+const publicPath = path.join(process.cwd(), "public");
+
 app.use(
   pinoHttp({
     logger,
@@ -19,23 +22,22 @@ app.use(
 );
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..", "public")));
 
+
+app.use(express.static(publicPath));
 
 app.use("/api/auth", authRouter);
 app.use("/api/questions", questionsRouter);
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
-});
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(publicPath, "index.html"));
+});
 
 app.use((req, res) => {
   res.status(404).json({ message: "Not found" });
 });
 
-
 app.use(errorHandler);
-
 
 module.exports = app;
