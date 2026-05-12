@@ -28,7 +28,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/questions", questionsRouter);
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
+  res.send("Test");
 });
 
 
