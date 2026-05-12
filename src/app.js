@@ -2,6 +2,7 @@ const path = require("path");
 const express = require("express");
 const pinoHttp = require("pino-http");
 const logger = require("./lib/logger");
+const fs = require("fs");
 
 const authRouter = require("./routes/auth");
 const questionsRouter = require("./routes/questions");
@@ -10,9 +11,8 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 
 
-const publicPath = path.resolve(__dirname, "..", "public");
+const publicPath = path.join(process.cwd(), "public");
 
-const fs = require("fs");
 
 console.log("PUBLIC PATH:", publicPath);
 console.log("PUBLIC EXISTS:", fs.existsSync(publicPath));
