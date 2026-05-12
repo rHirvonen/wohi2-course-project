@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const app = require("./app");
 const logger = require("./lib/logger");
 const prisma = require("./lib/prisma");

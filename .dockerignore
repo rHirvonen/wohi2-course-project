@@ -9,4 +9,5 @@ coverage
 postman
 cms-bruno
 src/generated
+public/uploads/*
 !public/uploads/.gitkeep

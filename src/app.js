@@ -2,7 +2,6 @@ const path = require("path");
 const express = require("express");
 const pinoHttp = require("pino-http");
 const logger = require("./lib/logger");
-const fs = require("fs");
 
 const authRouter = require("./routes/auth");
 const questionsRouter = require("./routes/questions");
@@ -10,14 +9,7 @@ const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
-
-const publicPath = path.join(process.cwd(), "public");
-
-
-console.log("APP.JS IS RUNNING");
-console.log("PUBLIC PATH:", publicPath);
-console.log("PUBLIC EXISTS:", fs.existsSync(publicPath));
-console.log("INDEX EXISTS:", fs.existsSync(path.join(publicPath, "index.html")));
+const publicPath = path.resolve(__dirname, "..", "public");
 
 app.use(
   pinoHttp({
@@ -29,21 +21,14 @@ app.use(
 );
 
 app.use(express.json());
-
-
-app.use("/", express.static(publicPath));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 
 app.use("/api/auth", authRouter);
 app.use("/api/questions", questionsRouter);
 
-
-app.get("/", (req, res, next) => {
-  const file = path.join(publicPath, "index.html");
-
-  res.sendFile(file, (err) => {
-    if (err) next(err);
-  });
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
 });
 
 
@@ -53,5 +38,6 @@ app.use((req, res) => {
 
 
 app.use(errorHandler);
+
 
 module.exports = app;
