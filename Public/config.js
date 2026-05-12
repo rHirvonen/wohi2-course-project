@@ -1,5 +1,5 @@
 const CONFIG = {
-  API_URL: "",
+  API_URL: "http://localhost:3000",
   ROUTES: {
     LOGIN: "/api/auth/login",
     REGISTER: "/api/auth/register",

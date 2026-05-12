@@ -4,11 +4,10 @@ const multer = require("multer");
 
 const prisma = require("../lib/prisma");
 const upload = require("../middleware/upload");
+const authenticate = require("../middleware/auth");
 
 const { NotFoundError, UnauthorizedError } = require("../lib/errors");
 const { z } = require("zod");
-
-
 
 function parseKeywords(keywords) {
   if (Array.isArray(keywords)) return keywords;
@@ -37,8 +36,6 @@ function formatQuestion(question) {
   };
 }
 
-
-
 const PostInput = z.object({
   question: z.string().min(1),
   answer: z.string().min(1),
@@ -47,21 +44,8 @@ const PostInput = z.object({
 });
 
 
-
-function requireAuth(req, res) {
-  if (!req.headers.authorization) {
-    res.status(401).json({ message: "No token provided" });
-    return false;
-  }
-  return true;
-}
-
-
-
 router.get("/", async (req, res, next) => {
   try {
-    if (!requireAuth(req, res)) return;
-
     let page = parseInt(req.query.page, 10);
     let limit = parseInt(req.query.limit, 10);
 
@@ -103,11 +87,8 @@ router.get("/", async (req, res, next) => {
 });
 
 
-
 router.get("/:id", async (req, res, next) => {
   try {
-    if (!requireAuth(req, res)) return;
-
     const id = Number(req.params.id);
 
     const post = await prisma.post.findUnique({
@@ -119,9 +100,7 @@ router.get("/:id", async (req, res, next) => {
       },
     });
 
-    if (!post) {
-      throw new NotFoundError("Question not found");
-    }
+    if (!post) throw new NotFoundError("Question not found");
 
     res.json(formatQuestion(post));
   } catch (err) {
@@ -130,22 +109,17 @@ router.get("/:id", async (req, res, next) => {
 });
 
 
-
-router.post("/", upload.single("image"), async (req, res, next) => {
+router.post("/", authenticate, upload.single("image"), async (req, res, next) => {
   try {
-    if (!requireAuth(req, res)) return;
-
     const data = PostInput.parse(req.body);
-
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const created = await prisma.post.create({
       data: {
         title: data.question,
         content: data.answer,
-        userId: req.user?.id || req.user?.userId,
+        userId: req.user.id,
         date: new Date(data.date),
-        imageUrl,
+        imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
         keywords: {
           connectOrCreate: parseKeywords(data.keywords).map((kw) => ({
             where: { name: kw },
@@ -160,6 +134,58 @@ router.post("/", upload.single("image"), async (req, res, next) => {
     });
 
     res.status(201).json(formatQuestion(created));
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+router.post("/:id/play", authenticate, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const { answer } = req.body;
+
+    const post = await prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!post) throw new NotFoundError("Question not found");
+
+    const isCorrect =
+      post.content.trim().toLowerCase() === answer?.trim().toLowerCase();
+
+    
+    try {
+      await prisma.attempt.create({
+        data: {
+          userId: req.user.id,
+          postId: id,
+          correct: isCorrect,
+        },
+      });
+    } catch (err) {
+      // P2002 = duplicate attempt
+      if (err.code === "P2002") {
+        await prisma.attempt.update({
+          where: {
+            userId_postId: {
+              userId: req.user.id,
+              postId: id,
+            },
+          },
+          data: {
+            correct: isCorrect,
+          },
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    res.json({
+      correct: isCorrect,
+      correctAnswer: post.content,
+    });
   } catch (err) {
     next(err);
   }

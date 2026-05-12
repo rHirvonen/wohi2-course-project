@@ -26,8 +26,10 @@ module.exports = async function authenticate(req, res, next) {
       throw new UnauthorizedError("Invalid or expired token");
     }
 
+    const userId = payload.userId ?? payload.id
+
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: { id: userId },
     });
 
     if (!user) {

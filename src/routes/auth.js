@@ -5,8 +5,12 @@ const jwt = require("jsonwebtoken");
 
 const prisma = require("../lib/prisma");
 
-const JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is missing from environment variables");
+}
 
 
 router.post("/register", async (req, res, next) => {
@@ -40,7 +44,6 @@ router.post("/register", async (req, res, next) => {
       JWT_SECRET
     );
 
-    
     res.status(201).json({
       token,
       userId: user.id,
@@ -49,7 +52,6 @@ router.post("/register", async (req, res, next) => {
     next(err);
   }
 });
-
 
 
 router.post("/login", async (req, res, next) => {
@@ -75,7 +77,11 @@ router.post("/login", async (req, res, next) => {
       JWT_SECRET
     );
 
-    res.json({ token });
+    
+    res.json({
+      token,
+      userId: user.id,
+    });
   } catch (err) {
     next(err);
   }
