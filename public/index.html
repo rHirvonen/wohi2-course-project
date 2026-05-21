@@ -274,6 +274,24 @@
       background: rgba(255,255,255,0.14);
     }
 
+    .btn-play {
+      background: linear-gradient(135deg, #51cf66, #40c057);
+
+      color: white;
+
+      padding: 0.7rem 1.2rem;
+
+      border-radius: 12px;
+
+      font-weight: 800;
+    }
+
+    .btn-play:hover {
+      transform: translateY(-2px);
+
+      box-shadow: 0 4px 18px rgba(81, 207, 102, 0.3);
+    }
+
     /* QUESTION CARD */
 
     .question-card {
@@ -350,13 +368,111 @@
       background: rgba(255, 107, 107, 0.25);
     }
 
-    /* EMPTY */
+    /* FORM */
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      color: #bbb;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .form-group textarea,
+    .form-group input {
+      width: 100%;
+
+      padding: 0.9rem 1rem;
+
+      border-radius: 14px;
+
+      border: 1px solid rgba(255,255,255,0.1);
+
+      background: rgba(255,255,255,0.06);
+
+      color: white;
+
+      font-family: inherit;
+      font-size: 1rem;
+    }
+
+    .form-group textarea:focus,
+    .form-group input:focus {
+      outline: none;
+      border-color: #ffd200;
+    }
+
+    /* BACK LINK */
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1rem;
+
+      color: #c4b5fd;
+
+      text-decoration: none;
+
+      font-weight: 700;
+
+      transition: 0.2s;
+    }
+
+    .back-link:hover {
+      color: white;
+    }
+
+    /* PLAY RESULT */
+
+    .play-result {
+      margin-top: 1.5rem;
+
+      padding: 1rem 1.2rem;
+
+      border-radius: 14px;
+
+      font-weight: 700;
+    }
+
+    .play-result.correct {
+      background: rgba(81, 207, 102, 0.12);
+
+      border: 1px solid rgba(81, 207, 102, 0.25);
+
+      color: #51cf66;
+    }
+
+    .play-result.incorrect {
+      background: rgba(255, 107, 107, 0.12);
+
+      border: 1px solid rgba(255, 107, 107, 0.25);
+
+      color: #ff6b6b;
+    }
+
+    /* STATES */
 
     .empty-state {
       text-align: center;
       padding: 4rem 1rem;
 
       color: #777;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #aaa;
+    }
+
+    .error {
+      color: #ff6b6b;
+      text-align: center;
+      padding: 1rem;
     }
   </style>
 </head>
@@ -379,31 +495,12 @@
 
       <div class="app-layout">
 
-        <!-- SIDEBAR -->
-
         <aside class="sidebar">
 
           <div class="panel">
             <h2>Leaderboard</h2>
 
-            <div id="leaderboard">
-
-              <div class="leaderboard-item">
-                <span class="leaderboard-rank">#1 Alex</span>
-                <span class="leaderboard-score">1200</span>
-              </div>
-
-              <div class="leaderboard-item">
-                <span class="leaderboard-rank">#2 Mia</span>
-                <span class="leaderboard-score">980</span>
-              </div>
-
-              <div class="leaderboard-item">
-                <span class="leaderboard-rank">#3 John</span>
-                <span class="leaderboard-score">870</span>
-              </div>
-
-            </div>
+            <div id="leaderboard"></div>
           </div>
 
           <div class="panel">
@@ -417,8 +514,6 @@
           </div>
 
         </aside>
-
-        <!-- MAIN CONTENT -->
 
         <div class="content-area">
 
@@ -443,33 +538,7 @@
 
           </div>
 
-          <div id="questions-container">
-
-            <div class="question-card">
-
-              <h3>What is JavaScript closure?</h3>
-
-              <div class="question-meta">
-                Posted by Admin • 2h ago
-              </div>
-
-              <div class="question-answer">
-                A closure is a function that remembers variables from its outer scope even after the outer function has finished executing.
-              </div>
-
-              <div class="question-actions">
-                <button class="btn btn-edit">
-                  Edit
-                </button>
-
-                <button class="btn btn-delete">
-                  Delete
-                </button>
-              </div>
-
-            </div>
-
-          </div>
+          <div id="questions-container"></div>
 
         </div>
 
