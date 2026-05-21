@@ -516,7 +516,7 @@ async function generateAIQuestions() {
   try {
     const questions =
       await apiFetch(
-        "/generate-questions",
+        "/api/generate-questions",
         {
           method: "POST",
           body: JSON.stringify({
