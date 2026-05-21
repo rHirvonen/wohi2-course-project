@@ -604,8 +604,64 @@
     <section id="auth-section" style="display: none"></section>
 
     <section id="app-section" style="display: none">
-      <div id="questions-container"></div>
-    </section>
+
+  <div class="question-form-wrapper" style="margin-bottom: 2rem;">
+    <h2>AI Question Generator</h2>
+
+    <div class="form-group">
+      <label>Topic</label>
+
+      <input
+        type="text"
+        id="topicInput"
+        placeholder="Example: JavaScript"
+      />
+    </div>
+
+    <div class="form-group">
+      <label>Difficulty</label>
+
+      <select
+        id="difficultySelect"
+        style="
+          width: 100%;
+          padding: 0.7rem 1rem;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 10px;
+          color: white;
+          font-family: inherit;
+        "
+      >
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+
+    <button
+      class="btn btn-primary"
+      id="generateBtn"
+    >
+      Generate Questions
+    </button>
+
+    <div id="generatedQuestions"></div>
+  </div>
+
+  <div
+    id="leaderboard-container"
+    class="question-form-wrapper"
+    style="margin-bottom: 2rem;"
+  >
+    <h2>Leaderboard</h2>
+
+    <div id="leaderboard"></div>
+  </div>
+
+  <div id="questions-container"></div>
+
+   </section>
   </main>
 
   <script src="config.js"></script>

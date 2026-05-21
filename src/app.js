@@ -5,6 +5,8 @@ const logger = require("./lib/logger");
 
 const authRouter = require("./routes/auth");
 const questionsRouter = require("./routes/questions");
+const generateQuestionsRouter = require("./routes/generateQuestions");
+
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -21,15 +23,23 @@ app.use(
 );
 
 app.use(express.json());
+
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 
+// Routes
 app.use("/api/auth", authRouter);
+
 app.use("/api/questions", questionsRouter);
+
+app.use("/api/generate-questions", generateQuestionsRouter);
+
+
 
 app.get("/", (req, res) => {
   res.send("Test");
 });
+
 
 
 app.use((req, res) => {
@@ -37,7 +47,7 @@ app.use((req, res) => {
 });
 
 
-app.use(errorHandler);
 
+app.use(errorHandler);
 
 module.exports = app;
