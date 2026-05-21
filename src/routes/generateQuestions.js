@@ -1,9 +1,5 @@
 const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
 const router = express.Router();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post("/", async (req, res) => {
   try {
@@ -15,55 +11,69 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ Use only one stable model (no guessing, no listModels)
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-    });
-
     const prompt = `
-You are a quiz generator.
+Generate 5 ${difficulty} multiple-choice quiz questions about "${topic}".
 
-Create 5 ${difficulty} multiple-choice questions about: "${topic}".
-
-Return ONLY valid JSON (no markdown, no text).
-
-Format:
+Return ONLY valid JSON in this format:
 [
   {
-    "question": "string",
+    "question": "",
     "options": ["A", "B", "C", "D"],
-    "correctAnswer": "string"
+    "correctAnswer": ""
   }
 ]
 `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      console.error("Gemini error response:", data);
+      return res.status(500).json({
+        message: "No response from Gemini",
+        raw: data,
+      });
+    }
 
     let questions;
 
     try {
-      questions = JSON.parse(text);
+      questions = JSON.parse(
+        text.replace(/```json/g, "").replace(/```/g, "").trim()
+      );
     } catch (err) {
-      console.error("❌ JSON parse failed");
-      console.error("RAW OUTPUT:", text);
-
       return res.status(500).json({
-        message: "Invalid JSON from AI",
+        message: "Invalid JSON from Gemini",
         raw: text,
-      });
-    }
-
-    if (!Array.isArray(questions)) {
-      return res.status(500).json({
-        message: "AI response is not an array",
       });
     }
 
     res.json(questions);
   } catch (error) {
-    console.error("❌ Error generating questions:", error);
+    console.error("Error:", error);
 
     res.status(500).json({
       message: "Failed to generate questions",
