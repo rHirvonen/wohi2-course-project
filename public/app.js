@@ -58,7 +58,7 @@ async function apiFetch(route, options = {}) {
   if (!res.ok) {
     throw new Error(
       data.error ||
-        data.msg ||
+        data.message ||
         "Request failed"
     );
   }
@@ -89,12 +89,12 @@ function renderAuthForm() {
     : CONFIG.FIELDS.LOGIN;
 
   const title = isRegisterMode
-    ? "Sign Up"
-    : "Log In";
+    ? "Create Account"
+    : "Welcome Back";
 
   const switchText = isRegisterMode
     ? 'Already have an account? <a href="#" id="switch-mode">Log in</a>'
-    : 'Don\'t have an account? <a href="#" id="switch-mode">Sign up</a>';
+    : 'Don’t have an account? <a href="#" id="switch-mode">Sign up</a>';
 
   const formHTML = `
     <h2>${title}</h2>
@@ -229,80 +229,50 @@ async function showApp() {
   ).style.display =
     "inline-block";
 
+  renderLeaderboard();
+
   await loadQuestions();
 }
 
-async function loadQuestions(
-  keyword = "",
-  page = 1
-) {
+async function loadQuestions() {
   const container =
     document.getElementById(
       "questions-container"
     );
 
   container.innerHTML =
-    '<p class="loading">Loading questions...</p>';
+    '<p class="loading">Loading quizzes...</p>';
 
   try {
-    const params =
-      new URLSearchParams({
-        page,
-        limit:
-          CONFIG.QUESTIONS_PER_PAGE,
-      });
-
-    if (keyword) {
-      params.set("keyword", keyword);
-    }
-
     const result =
       await apiFetch(
-        `${CONFIG.ROUTES.QUESTIONS}?${params}`
+        `${CONFIG.ROUTES.QUESTIONS}`
       );
 
-    const {
-      data: questions,
-      total,
-      totalPages,
-    } = result;
+    const questions =
+      result.data || result;
 
     let html = `
-      <div class="score-bar">
-        <div class="score-item">
-          <div class="score-value">
-            ${total}
-          </div>
-
-          <div class="score-label">
-            Questions
-          </div>
-        </div>
-      </div>
+      <div class="questions-grid">
     `;
 
-    html += `
-      <div class="toolbar">
-        <button
-          class="btn btn-primary"
-          id="new-question-btn"
-        >
-          + New Question
-        </button>
-      </div>
-    `;
-
-    if (questions.length === 0) {
+    if (!questions.length) {
       html += `
-        <p class="empty-state">
-          No questions found
-        </p>
+        <div class="empty-state">
+          No quiz questions yet.
+        </div>
       `;
     } else {
       html += questions
         .map(
           (q) => `
         <article class="question-card">
+          <div class="question-top">
+            <span class="question-badge">
+              Quiz
+            </span>
+          </div>
+
           <h3>
             ${q.question}
           </h3>
@@ -312,7 +282,7 @@ async function loadQuestions(
               class="btn btn-play"
               data-id="${q.id}"
             >
-              Play
+              Play Quiz
             </button>
           </div>
         </article>
@@ -320,6 +290,8 @@ async function loadQuestions(
         )
         .join("");
     }
+
+    html += `</div>`;
 
     container.innerHTML = html;
 
@@ -351,7 +323,7 @@ async function playQuestion(qId) {
     );
 
   container.innerHTML =
-    '<p class="loading">Loading...</p>';
+    '<p class="loading">Loading question...</p>';
 
   try {
     const q = await apiFetch(
@@ -359,17 +331,15 @@ async function playQuestion(qId) {
     );
 
     container.innerHTML = `
-      <a
-        href="#"
+      <button
         id="back-btn"
-        class="back-link"
+        class="btn btn-secondary"
+        style="margin-bottom:1rem;"
       >
-        &larr; Back
-      </a>
+        ← Back
+      </button>
 
-      <div
-        class="question-form-wrapper"
-      >
+      <div class="question-form-wrapper">
         <div class="play-question-text">
           ${q.question}
         </div>
@@ -384,6 +354,7 @@ async function playQuestion(qId) {
               id="play-answer"
               rows="3"
               required
+              placeholder="Write your answer..."
             ></textarea>
           </div>
 
@@ -391,7 +362,7 @@ async function playQuestion(qId) {
             type="submit"
             class="btn btn-play"
           >
-            Submit
+            Submit Answer
           </button>
         </form>
 
@@ -403,8 +374,7 @@ async function playQuestion(qId) {
       .getElementById("back-btn")
       .addEventListener(
         "click",
-        (e) => {
-          e.preventDefault();
+        () => {
           loadQuestions();
         }
       );
@@ -442,7 +412,7 @@ async function playQuestion(qId) {
               resultEl.innerHTML =
                 `
                 <div class="play-result correct">
-                  Correct!
+                  ✅ Correct Answer!
                 </div>
               `;
 
@@ -451,7 +421,10 @@ async function playQuestion(qId) {
               resultEl.innerHTML =
                 `
                 <div class="play-result incorrect">
-                  Incorrect!
+                  ❌ Incorrect
+
+                  <br /><br />
+
                   Correct answer:
                   <strong>
                     ${result.correctAnswer}
@@ -471,109 +444,6 @@ async function playQuestion(qId) {
       );
   } catch (err) {
     container.innerHTML = `
-      <p class="error">
-        ${err.message}
-      </p>
-    `;
-  }
-}
-
-// --- AI Question Generator ---
-async function generateAIQuestions() {
-  const topic =
-    document.getElementById(
-      "topicInput"
-    ).value;
-
-  const difficulty =
-    document.getElementById(
-      "difficultySelect"
-    ).value;
-
-  const container =
-    document.getElementById(
-      "generatedQuestions"
-    );
-
-  if (!topic) {
-    container.innerHTML =
-      `
-      <p class="error">
-        Please enter a topic
-      </p>
-    `;
-
-    return;
-  }
-
-  container.innerHTML =
-    `
-    <p class="loading">
-      Generating questions...
-    </p>
-  `;
-
-  try {
-    const questions =
-      await apiFetch(
-        "/api/generate-questions",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            topic,
-            difficulty,
-          }),
-        }
-      );
-
-    container.innerHTML =
-      questions
-        .map(
-          (q) => `
-        <article class="question-card">
-          <h3>
-            ${q.question}
-          </h3>
-
-          <ul
-            style="
-              margin-top:1rem;
-              padding-left:1.5rem;
-            "
-          >
-            ${q.options
-              .map(
-                (option) =>
-                  `
-                  <li
-                    style="
-                      margin-bottom:0.5rem;
-                    "
-                  >
-                    ${option}
-                  </li>
-                `
-              )
-              .join("")}
-          </ul>
-
-          <p
-            style="
-              margin-top:1rem;
-              color:#51cf66;
-              font-weight:700;
-            "
-          >
-            Correct Answer:
-            ${q.correctAnswer}
-          </p>
-        </article>
-      `
-        )
-        .join("");
-  } catch (err) {
-    container.innerHTML =
-      `
       <p class="error">
         ${err.message}
       </p>
@@ -623,42 +493,37 @@ function renderLeaderboard() {
     ) || [];
 
   if (scores.length === 0) {
-    container.innerHTML =
-      "<p>No scores yet</p>";
-
+    container.innerHTML = `
+      <div class="empty-state">
+        No scores yet
+      </div>
+    `;
     return;
   }
 
   container.innerHTML = scores
+    .slice(0, 10)
     .map(
       (s, index) => `
-      <div
-        style="
-          display:flex;
-          justify-content:space-between;
-          margin-bottom:0.5rem;
-          padding:0.5rem;
-          background:rgba(255,255,255,0.05);
-          border-radius:8px;
-        "
-      >
-        <span>
+      <div class="leaderboard-item">
+        <div class="leaderboard-rank">
           #${index + 1}
-        </span>
+        </div>
 
-        <span>
+        <div class="leaderboard-score">
           ${s.score} pts
-        </span>
+        </div>
 
-        <span>
+        <div class="leaderboard-date">
           ${s.date}
-        </span>
+        </div>
       </div>
     `
     )
     .join("");
 }
 
+// --- Logout ---
 function handleLogout() {
   removeToken();
   showAuth();
@@ -676,20 +541,6 @@ document.addEventListener(
         "click",
         handleLogout
       );
-
-    const generateBtn =
-      document.getElementById(
-        "generateBtn"
-      );
-
-    if (generateBtn) {
-      generateBtn.addEventListener(
-        "click",
-        generateAIQuestions
-      );
-    }
-
-    renderLeaderboard();
 
     if (getToken()) {
       showApp();

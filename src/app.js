@@ -1,6 +1,7 @@
 const path = require("path");
 const express = require("express");
 const pinoHttp = require("pino-http");
+
 const logger = require("./lib/logger");
 
 const authRouter = require("./routes/auth");
@@ -11,43 +12,58 @@ const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
-const publicPath = path.resolve(__dirname, "..", "public");
+// Paths
+const publicPath = path.resolve(
+  __dirname,
+  "..",
+  "public"
+);
 
+// Logger
 app.use(
   pinoHttp({
     logger,
     autoLogging: {
-      ignore: (req) => req.url.startsWith("/uploads"),
+      ignore: (req) =>
+        req.url.startsWith("/uploads"),
     },
   })
 );
 
+// Middleware
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname, "..", "public")));
+// Static files
+app.use(express.static(publicPath));
 
-
-// Routes
+// API Routes
 app.use("/api/auth", authRouter);
 
-app.use("/api/questions", questionsRouter);
+app.use(
+  "/api/questions",
+  questionsRouter
+);
 
-app.use("/api/generate-questions", generateQuestionsRouter);
+app.use(
+  "/api/generate-questions",
+  generateQuestionsRouter
+);
 
-
-
-app.get("/", (req, res) => {
-  res.send("Test");
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+  });
 });
 
-
-
-app.use((req, res) => {
-  res.status(404).json({ message: "Not found" });
+// Frontend
+app.get("*", (req, res) => {
+  res.sendFile(
+    path.join(publicPath, "index.html")
+  );
 });
 
-
-
+// Error handler
 app.use(errorHandler);
 
 module.exports = app;
