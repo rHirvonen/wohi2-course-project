@@ -14,7 +14,7 @@ router.post("/", async (req, res) => {
     const prompt = `
 Generate 5 ${difficulty} multiple-choice quiz questions about "${topic}".
 
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON:
 [
   {
     "question": "",
@@ -24,7 +24,6 @@ Return ONLY valid JSON in this format:
 ]
 `;
 
-    // ✅ FIX 1: use v1 (NOT v1beta) + stable model
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
@@ -35,26 +34,34 @@ Return ONLY valid JSON in this format:
         body: JSON.stringify({
           contents: [
             {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
+              parts: [{ text: prompt }],
             },
           ],
         }),
       }
     );
 
+    // 🔥 TÄRKEÄ FIX 1: tarkista HTTP virhe
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Gemini HTTP error:", errorText);
+
+      return res.status(500).json({
+        message: "Gemini API error",
+        raw: errorText,
+      });
+    }
+
     const data = await response.json();
 
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    console.log("🔍 Gemini raw response:", JSON.stringify(data, null, 2));
 
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    // 🔥 FIX 2: jos ei dataa → STOP
     if (!text) {
-      console.error("Gemini error response:", data);
       return res.status(500).json({
-        message: "No response from Gemini",
+        message: "No valid content from Gemini",
         raw: data,
       });
     }
@@ -66,7 +73,7 @@ Return ONLY valid JSON in this format:
         text.replace(/```json/g, "").replace(/```/g, "").trim()
       );
     } catch (err) {
-      console.error("JSON parse failed:", text);
+      console.error("❌ JSON parse failed:", text);
 
       return res.status(500).json({
         message: "Invalid JSON from Gemini",
@@ -74,12 +81,13 @@ Return ONLY valid JSON in this format:
       });
     }
 
-    res.json(questions);
+    return res.json(questions);
   } catch (error) {
-    console.error("Error generating questions:", error);
+    console.error("❌ Server error:", error);
 
-    res.status(500).json({
-      message: "Failed to generate questions",
+    return res.status(500).json({
+      message: "Backend crash",
+      error: error.message,
     });
   }
 });
