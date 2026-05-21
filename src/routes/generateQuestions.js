@@ -24,8 +24,9 @@ Return ONLY valid JSON in this format:
 ]
 `;
 
+    // ✅ FIX 1: use v1 (NOT v1beta) + stable model
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -65,6 +66,8 @@ Return ONLY valid JSON in this format:
         text.replace(/```json/g, "").replace(/```/g, "").trim()
       );
     } catch (err) {
+      console.error("JSON parse failed:", text);
+
       return res.status(500).json({
         message: "Invalid JSON from Gemini",
         raw: text,
@@ -73,7 +76,7 @@ Return ONLY valid JSON in this format:
 
     res.json(questions);
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error generating questions:", error);
 
     res.status(500).json({
       message: "Failed to generate questions",
