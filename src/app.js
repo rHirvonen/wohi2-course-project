@@ -6,7 +6,7 @@ const logger = require("./lib/logger");
 
 const authRouter = require("./routes/auth");
 const questionsRouter = require("./routes/questions");
-const generateQuestionsRouter = require("./routes/generateQuestions");
+
 
 const errorHandler = require("./middleware/errorHandler");
 
@@ -44,10 +44,6 @@ app.use(
   questionsRouter
 );
 
-app.use(
-  "/api/generate-questions",
-  generateQuestionsRouter
-);
 
 // Health check
 app.get("/api/health", (req, res) => {
