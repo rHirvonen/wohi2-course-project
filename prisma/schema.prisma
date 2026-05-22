@@ -8,14 +8,16 @@ datasource db {
 }
 
 model Post {
-  id       Int       @id @default(autoincrement())
-  title    String    @db.VarChar(255)
-  date     DateTime
-  content  String    @db.Text
-  imageUrl String?   @db.VarChar(255)
+  id         Int       @id @default(autoincrement())
+  title      String    @db.VarChar(255)
+  date       DateTime
+  content    String    @db.Text
+  imageUrl   String?   @db.VarChar(255)
 
-  keywords Keyword[]
-  attempts Attempt[]
+  difficulty String    @default("easy") @db.VarChar(20)
+
+  keywords   Keyword[]
+  attempts   Attempt[]
 
   userId Int?
   user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)

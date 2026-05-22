@@ -36,6 +36,8 @@ app.use(express.json());
 // Static files
 app.use(express.static(publicPath));
 
+app.use("/uploads", express.static("uploads"));
+
 // API Routes
 app.use("/api/auth", authRouter);
 

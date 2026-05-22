@@ -28,6 +28,7 @@ function formatQuestion(question) {
     question: question.title,
     answer: question.content,
     imageUrl: question.imageUrl,
+    difficulty: question.difficulty || "easy",
     date: question.date,
     userId: question.userId,
     keywords: question.keywords?.map((k) => k.name) || [],
@@ -40,9 +41,15 @@ const PostInput = z.object({
   question: z.string().min(1),
   answer: z.string().min(1),
   date: z.string().min(1),
-  keywords: z.union([z.string(), z.array(z.string())]).optional(),
-});
 
+  difficulty: z
+    .enum(["easy", "medium", "hard"])
+    .optional(),
+
+  keywords: z
+    .union([z.string(), z.array(z.string())])
+    .optional(),
+});
 
 router.get("/", async (req, res, next) => {
   try {
@@ -55,9 +62,19 @@ router.get("/", async (req, res, next) => {
 
     const skip = (page - 1) * limit;
 
-    const where = req.query.keyword
-      ? { keywords: { some: { name: req.query.keyword } } }
-      : {};
+    const where = {};
+
+    if (req.query.keyword) {
+      where.keywords = {
+        some: {
+          name: req.query.keyword,
+        },
+      };
+    }
+
+    if (req.query.difficulty) {
+      where.difficulty = req.query.difficulty;
+    }
 
     const [questions, total] = await Promise.all([
       prisma.post.findMany({
@@ -67,10 +84,13 @@ router.get("/", async (req, res, next) => {
           user: true,
           attempts: true,
         },
-        orderBy: { id: "asc" },
+        orderBy: {
+          id: "asc",
+        },
         skip,
         take: limit,
       }),
+
       prisma.post.count({ where }),
     ]);
 
@@ -86,13 +106,13 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-
 router.get("/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
     const post = await prisma.post.findUnique({
       where: { id },
+
       include: {
         keywords: true,
         user: true,
@@ -100,7 +120,9 @@ router.get("/:id", async (req, res, next) => {
       },
     });
 
-    if (!post) throw new NotFoundError("Question not found");
+    if (!post) {
+      throw new NotFoundError("Question not found");
+    }
 
     res.json(formatQuestion(post));
   } catch (err) {
@@ -108,53 +130,75 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
+router.post(
+  "/",
+  authenticate,
+  upload.single("image"),
+  async (req, res, next) => {
+    try {
+      const data = PostInput.parse(req.body);
 
-router.post("/", authenticate, upload.single("image"), async (req, res, next) => {
-  try {
-    const data = PostInput.parse(req.body);
+      const created = await prisma.post.create({
+        data: {
+          title: data.question,
+          content: data.answer,
 
-    const created = await prisma.post.create({
-      data: {
-        title: data.question,
-        content: data.answer,
-        userId: req.user.id,
-        date: new Date(data.date),
-        imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
-        keywords: {
-          connectOrCreate: parseKeywords(data.keywords).map((kw) => ({
-            where: { name: kw },
-            create: { name: kw },
-          })),
+          difficulty: data.difficulty || "easy",
+
+          userId: req.user.id,
+
+          date: new Date(data.date),
+
+          imageUrl: req.file
+            ? `/uploads/${req.file.filename}`
+            : null,
+
+          keywords: {
+            connectOrCreate: parseKeywords(
+              data.keywords
+            ).map((kw) => ({
+              where: {
+                name: kw,
+              },
+
+              create: {
+                name: kw,
+              },
+            })),
+          },
         },
-      },
-      include: {
-        keywords: true,
-        user: true,
-      },
-    });
 
-    res.status(201).json(formatQuestion(created));
-  } catch (err) {
-    next(err);
+        include: {
+          keywords: true,
+          user: true,
+        },
+      });
+
+      res.status(201).json(formatQuestion(created));
+    } catch (err) {
+      next(err);
+    }
   }
-});
-
+);
 
 router.post("/:id/play", authenticate, async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+
     const { answer } = req.body;
 
     const post = await prisma.post.findUnique({
       where: { id },
     });
 
-    if (!post) throw new NotFoundError("Question not found");
+    if (!post) {
+      throw new NotFoundError("Question not found");
+    }
 
     const isCorrect =
-      post.content.trim().toLowerCase() === answer?.trim().toLowerCase();
+      post.content.trim().toLowerCase() ===
+      answer?.trim().toLowerCase();
 
-    
     try {
       await prisma.attempt.create({
         data: {
@@ -164,7 +208,6 @@ router.post("/:id/play", authenticate, async (req, res, next) => {
         },
       });
     } catch (err) {
-      // P2002 = duplicate attempt
       if (err.code === "P2002") {
         await prisma.attempt.update({
           where: {
@@ -173,6 +216,7 @@ router.post("/:id/play", authenticate, async (req, res, next) => {
               postId: id,
             },
           },
+
           data: {
             correct: isCorrect,
           },
@@ -191,26 +235,36 @@ router.post("/:id/play", authenticate, async (req, res, next) => {
   }
 });
 
-
 router.use((err, req, res, next) => {
   if (err instanceof z.ZodError) {
-    return res.status(400).json({ message: "Invalid input" });
+    return res.status(400).json({
+      message: "Invalid input",
+    });
   }
 
   if (err instanceof multer.MulterError) {
-    return res.status(400).json({ message: err.message });
+    return res.status(400).json({
+      message: err.message,
+    });
   }
 
   if (err instanceof NotFoundError) {
-    return res.status(404).json({ message: err.message });
+    return res.status(404).json({
+      message: err.message,
+    });
   }
 
   if (err instanceof UnauthorizedError) {
-    return res.status(401).json({ message: err.message });
+    return res.status(401).json({
+      message: err.message,
+    });
   }
 
   console.error(err);
-  return res.status(500).json({ message: "Internal server error" });
+
+  return res.status(500).json({
+    message: "Internal server error",
+  });
 });
 
 module.exports = router;

@@ -211,10 +211,10 @@ async function loadQuestions() {
         <article class="question-card">
 
           ${
-            q.image
+            q.imageUrl
               ? `
             <img
-              src="${CONFIG.API_URL}/uploads/${q.image}"
+              src="${CONFIG.API_URL}${q.imageUrl}"
               alt="Question image"
               style="
                 width:100%;
@@ -229,6 +229,16 @@ async function loadQuestions() {
           }
 
           <h3>${q.question}</h3>
+
+          <p
+            style="
+              margin-top:0.5rem;
+              color:#ffd200;
+              font-weight:700;
+            "
+          >
+            Difficulty: ${q.difficulty}
+          </p>
 
           <div class="question-actions">
             <button
@@ -329,6 +339,16 @@ function renderCreateQuestionForm() {
         </div>
 
         <div class="form-group">
+          <label>Difficulty</label>
+
+          <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label>Date</label>
 
           <input
@@ -401,6 +421,11 @@ async function handleCreateQuestion(e) {
       document.getElementById("date").value
     );
 
+    formData.append(
+      "difficulty",
+      document.getElementById("difficulty").value
+    );
+
     const file =
       document.getElementById("image").files[0];
 
@@ -448,10 +473,10 @@ async function playQuestion(qId) {
       <div class="question-form-wrapper">
 
         ${
-          q.image
+          q.imageUrl
             ? `
           <img
-            src="${CONFIG.API_URL}/uploads/${q.image}"
+            src="${CONFIG.API_URL}${q.imageUrl}"
             alt="Question image"
             style="
               width:100%;
@@ -474,6 +499,16 @@ async function playQuestion(qId) {
         >
           ${q.question}
         </h2>
+
+        <p
+          style="
+            margin-bottom:1rem;
+            color:#ffd200;
+            font-weight:700;
+          "
+        >
+          Difficulty: ${q.difficulty}
+        </p>
 
         <p
           style="

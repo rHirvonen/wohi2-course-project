@@ -87,8 +87,6 @@
       padding: 0 1rem;
     }
 
-    /* AUTH */
-
     #auth-section {
       max-width: 430px;
       margin: 5rem auto;
@@ -113,8 +111,6 @@
       font-weight: 800;
     }
 
-    /* APP GRID */
-
     .app-layout {
       display: grid;
       grid-template-columns: 320px 1fr;
@@ -127,8 +123,6 @@
         grid-template-columns: 1fr;
       }
     }
-
-    /* SIDEBAR */
 
     .sidebar {
       position: sticky;
@@ -157,8 +151,6 @@
       font-weight: 800;
     }
 
-    /* LEADERBOARD */
-
     .leaderboard-item {
       display: flex;
       justify-content: space-between;
@@ -183,15 +175,11 @@
       font-weight: 800;
     }
 
-    /* CONTENT */
-
     .content-area {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
     }
-
-    /* TOOLBAR */
 
     .toolbar {
       display: flex;
@@ -205,6 +193,7 @@
     .search-bar {
       display: flex;
       gap: 0.5rem;
+      flex-wrap: wrap;
     }
 
     .search-bar input {
@@ -227,8 +216,6 @@
       outline: none;
       border-color: #ffd200;
     }
-
-    /* BUTTONS */
 
     .btn {
       border: none;
@@ -292,7 +279,30 @@
       box-shadow: 0 4px 18px rgba(81, 207, 102, 0.3);
     }
 
-    /* QUESTION CARD */
+    .difficulty-badge {
+      display: inline-block;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+
+    .difficulty-easy {
+      background: rgba(81, 207, 102, 0.15);
+      color: #51cf66;
+    }
+
+    .difficulty-medium {
+      background: rgba(255, 212, 59, 0.15);
+      color: #ffd43b;
+    }
+
+    .difficulty-hard {
+      background: rgba(255, 107, 107, 0.15);
+      color: #ff6b6b;
+    }
 
     .question-card {
       background: rgba(255,255,255,0.06);
@@ -340,36 +350,6 @@
       gap: 0.7rem;
     }
 
-    .btn-edit {
-      background: rgba(167, 139, 250, 0.15);
-      color: #c4b5fd;
-
-      border: 1px solid rgba(167, 139, 250, 0.25);
-
-      padding: 0.55rem 1rem;
-      border-radius: 10px;
-    }
-
-    .btn-delete {
-      background: rgba(255, 107, 107, 0.12);
-      color: #ff6b6b;
-
-      border: 1px solid rgba(255, 107, 107, 0.2);
-
-      padding: 0.55rem 1rem;
-      border-radius: 10px;
-    }
-
-    .btn-edit:hover {
-      background: rgba(167, 139, 250, 0.3);
-    }
-
-    .btn-delete:hover {
-      background: rgba(255, 107, 107, 0.25);
-    }
-
-    /* FORM */
-
     .form-group {
       display: flex;
       flex-direction: column;
@@ -384,7 +364,8 @@
     }
 
     .form-group textarea,
-    .form-group input {
+    .form-group input,
+    .form-group select {
       width: 100%;
 
       padding: 0.9rem 1rem;
@@ -402,31 +383,11 @@
     }
 
     .form-group textarea:focus,
-    .form-group input:focus {
+    .form-group input:focus,
+    .form-group select:focus {
       outline: none;
       border-color: #ffd200;
     }
-
-    /* BACK LINK */
-
-    .back-link {
-      display: inline-block;
-      margin-bottom: 1rem;
-
-      color: #c4b5fd;
-
-      text-decoration: none;
-
-      font-weight: 700;
-
-      transition: 0.2s;
-    }
-
-    .back-link:hover {
-      color: white;
-    }
-
-    /* PLAY RESULT */
 
     .play-result {
       margin-top: 1.5rem;
@@ -453,8 +414,6 @@
 
       color: #ff6b6b;
     }
-
-    /* STATES */
 
     .empty-state {
       text-align: center;
@@ -503,16 +462,6 @@
             <div id="leaderboard"></div>
           </div>
 
-          <div class="panel">
-            <h2>Quick Stats</h2>
-
-            <p>Total quizzes played: <strong>24</strong></p>
-            <br />
-            <p>Best score: <strong>92%</strong></p>
-            <br />
-            <p>Rank: <strong>#14</strong></p>
-          </div>
-
         </aside>
 
         <div class="content-area">
@@ -533,6 +482,13 @@
               <button class="btn btn-secondary">
                 Search
               </button>
+
+              <select id="difficulty-filter" class="btn btn-secondary">
+                <option value="">All difficulties</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
 
             </div>
 
