@@ -94,28 +94,45 @@ function renderAuthForm() {
           return `
             <div class="form-group">
               <label for="${f}">${label}</label>
-              <input type="${type}" id="${f}" name="${f}" required />
+
+              <input
+                type="${type}"
+                id="${f}"
+                name="${f}"
+                required
+              />
             </div>
           `;
         })
         .join("")}
 
-      <button type="submit">${title}</button>
+      <button type="submit" class="btn btn-primary">
+        ${title}
+      </button>
     </form>
 
-    <p class="switch-text">${switchText}</p>
+    <p class="switch-text">
+      ${switchText}
+    </p>
+
     <p id="auth-error" class="error"></p>
   `;
 
   document.getElementById("auth-section").innerHTML = formHTML;
 
-  document.getElementById("auth-form").addEventListener("submit", handleAuth);
+  document
+    .getElementById("auth-form")
+    .addEventListener("submit", handleAuth);
 
-  document.getElementById("switch-mode").addEventListener("click", (e) => {
-    e.preventDefault();
-    isRegisterMode = !isRegisterMode;
-    renderAuthForm();
-  });
+  document
+    .getElementById("switch-mode")
+    .addEventListener("click", (e) => {
+      e.preventDefault();
+
+      isRegisterMode = !isRegisterMode;
+
+      renderAuthForm();
+    });
 }
 
 async function handleAuth(e) {
@@ -145,6 +162,7 @@ async function handleAuth(e) {
     });
 
     setToken(data.token);
+
     showApp();
   } catch (err) {
     errorEl.textContent = err.message;
@@ -158,7 +176,8 @@ async function showApp() {
   document.getElementById("logout-btn").style.display = "inline-block";
 
   renderLeaderboard();
-  attachCreateButton(); // 👈 tärkeä fix
+  attachCreateButton();
+
   await loadQuestions();
 }
 
@@ -166,28 +185,60 @@ async function showApp() {
 async function loadQuestions() {
   const container = document.getElementById("questions-container");
 
-  container.innerHTML = `<p class="loading">Loading quizzes...</p>`;
+  container.innerHTML = `
+    <p class="loading">
+      Loading quizzes...
+    </p>
+  `;
 
   try {
     const result = await apiFetch(CONFIG.ROUTES.QUESTIONS);
+
     const questions = result.data || result;
 
     let html = `<div class="questions-grid">`;
 
     if (!questions.length) {
-      html += `<div class="empty-state">No quiz questions yet.</div>`;
+      html += `
+        <div class="empty-state">
+          No quiz questions yet.
+        </div>
+      `;
     } else {
       html += questions
         .map(
           (q) => `
         <article class="question-card">
+
+          ${
+            q.image
+              ? `
+            <img
+              src="${CONFIG.API_URL}/uploads/${q.image}"
+              alt="Question image"
+              style="
+                width:100%;
+                height:220px;
+                object-fit:cover;
+                border-radius:14px;
+                margin-bottom:1rem;
+              "
+            />
+          `
+              : ""
+          }
+
           <h3>${q.question}</h3>
 
           <div class="question-actions">
-            <button class="btn btn-play" data-id="${q.id}">
+            <button
+              class="btn btn-play"
+              data-id="${q.id}"
+            >
               Play Quiz
             </button>
           </div>
+
         </article>
       `
         )
@@ -195,33 +246,51 @@ async function loadQuestions() {
     }
 
     html += `</div>`;
+
     container.innerHTML = html;
 
     container.querySelectorAll(".btn-play").forEach((el) => {
-      el.addEventListener("click", () => playQuestion(el.dataset.id));
+      el.addEventListener("click", () =>
+        playQuestion(el.dataset.id)
+      );
     });
   } catch (err) {
-    container.innerHTML = `<p class="error">${err.message}</p>`;
+    container.innerHTML = `
+      <p class="error">
+        ${err.message}
+      </p>
+    `;
   }
 }
 
-// --- CREATE BUTTON (FIX: ei duplikaatteja) ---
+// --- CREATE BUTTON ---
 function attachCreateButton() {
   const btn = document.querySelector(".btn.btn-primary");
 
   if (!btn || btn.dataset.bound) return;
 
   btn.dataset.bound = "true";
-  btn.addEventListener("click", renderCreateQuestionForm);
+
+  btn.addEventListener(
+    "click",
+    renderCreateQuestionForm
+  );
 }
 
-// --- CREATE QUESTION (FIX: IMAGE UPLOAD) ---
+// --- CREATE QUESTION FORM ---
 function renderCreateQuestionForm() {
-  const container = document.getElementById("questions-container");
+  const container = document.getElementById(
+    "questions-container"
+  );
 
   container.innerHTML = `
     <div class="question-form-wrapper">
-      <button id="back-btn" class="btn btn-secondary" style="margin-bottom:1rem;">
+
+      <button
+        id="back-btn"
+        class="btn btn-secondary"
+        style="margin-bottom:1rem;"
+      >
         ← Back
       </button>
 
@@ -231,59 +300,110 @@ function renderCreateQuestionForm() {
 
         <div class="form-group">
           <label>Question</label>
-          <input type="text" id="question" required />
+
+          <input
+            type="text"
+            id="question"
+            required
+          />
         </div>
 
         <div class="form-group">
           <label>Answer</label>
-          <textarea id="answer" rows="5" required></textarea>
+
+          <textarea
+            id="answer"
+            rows="5"
+            required
+          ></textarea>
         </div>
 
         <div class="form-group">
           <label>Keywords</label>
-          <input type="text" id="keywords" placeholder="js,node" />
+
+          <input
+            type="text"
+            id="keywords"
+            placeholder="js,node"
+          />
         </div>
 
         <div class="form-group">
           <label>Date</label>
-          <input type="date" id="date" required />
+
+          <input
+            type="date"
+            id="date"
+            required
+          />
         </div>
 
         <div class="form-group">
           <label>Image</label>
-          <input type="file" id="image" accept="image/*" />
+
+          <input
+            type="file"
+            id="image"
+            accept="image/*"
+          />
         </div>
 
-        <button type="submit" class="btn btn-primary">
+        <button
+          type="submit"
+          class="btn btn-primary"
+        >
           Create Question
         </button>
+
       </form>
     </div>
   `;
 
-  document.getElementById("back-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    loadQuestions();
-  });
+  document
+    .getElementById("back-btn")
+    .addEventListener("click", (e) => {
+      e.preventDefault();
+      loadQuestions();
+    });
 
   document
     .getElementById("create-question-form")
-    .addEventListener("submit", handleCreateQuestion);
+    .addEventListener(
+      "submit",
+      handleCreateQuestion
+    );
 }
 
-// --- CREATE QUESTION HANDLER (FIX: FormData) ---
+// --- CREATE QUESTION HANDLER ---
 async function handleCreateQuestion(e) {
   e.preventDefault();
 
   try {
     const formData = new FormData();
 
-    formData.append("question", document.getElementById("question").value);
-    formData.append("answer", document.getElementById("answer").value);
-    formData.append("keywords", document.getElementById("keywords").value);
-    formData.append("date", document.getElementById("date").value);
+    formData.append(
+      "question",
+      document.getElementById("question").value
+    );
 
-    const file = document.getElementById("image").files[0];
+    formData.append(
+      "answer",
+      document.getElementById("answer").value
+    );
+
+    formData.append(
+      "keywords",
+      document.getElementById("keywords").value
+    );
+
+    formData.append(
+      "date",
+      document.getElementById("date").value
+    );
+
+    const file =
+      document.getElementById("image").files[0];
+
     if (file) {
       formData.append("image", file);
     }
@@ -299,85 +419,195 @@ async function handleCreateQuestion(e) {
   }
 }
 
-// --- PLAY ---
+// --- PLAY QUESTION ---
 async function playQuestion(qId) {
-  const container = document.getElementById("questions-container");
+  const container = document.getElementById(
+    "questions-container"
+  );
 
-  container.innerHTML = `<p class="loading">Loading question...</p>`;
+  container.innerHTML = `
+    <p class="loading">
+      Loading question...
+    </p>
+  `;
 
   try {
-    const q = await apiFetch(`${CONFIG.ROUTES.QUESTIONS}/${qId}`);
+    const q = await apiFetch(
+      `${CONFIG.ROUTES.QUESTIONS}/${qId}`
+    );
 
     container.innerHTML = `
-      <button id="back-btn" class="btn btn-secondary" style="margin-bottom:1rem;">
+      <button
+        id="back-btn"
+        class="btn btn-secondary"
+        style="margin-bottom:1rem;"
+      >
         ← Back
       </button>
 
       <div class="question-form-wrapper">
-        <h2>${q.question}</h2>
+
+        ${
+          q.image
+            ? `
+          <img
+            src="${CONFIG.API_URL}/uploads/${q.image}"
+            alt="Question image"
+            style="
+              width:100%;
+              max-height:400px;
+              object-fit:cover;
+              border-radius:18px;
+              margin-bottom:1.5rem;
+              border:1px solid rgba(255,255,255,0.08);
+            "
+          />
+        `
+            : ""
+        }
+
+        <h2
+          style="
+            margin-bottom:1rem;
+            color:#ffd200;
+          "
+        >
+          ${q.question}
+        </h2>
+
+        <p
+          style="
+            margin-bottom:2rem;
+            color:#aaa;
+          "
+        >
+          Answer the question below
+        </p>
 
         <form id="play-form">
+
           <div class="form-group">
             <label>Your answer</label>
-            <textarea id="play-answer" rows="3" required></textarea>
+
+            <textarea
+              id="play-answer"
+              rows="3"
+              required
+              placeholder="Write your answer..."
+            ></textarea>
           </div>
 
-          <button type="submit" class="btn btn-play">
+          <button
+            type="submit"
+            class="btn btn-play"
+          >
             Submit Answer
           </button>
+
         </form>
 
         <div id="play-result"></div>
       </div>
     `;
 
-    document.getElementById("back-btn").addEventListener("click", loadQuestions);
+    document
+      .getElementById("back-btn")
+      .addEventListener("click", (e) => {
+        e.preventDefault();
+        loadQuestions();
+      });
 
-    document.getElementById("play-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    document
+      .getElementById("play-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-      const answer = document.getElementById("play-answer").value;
-      const resultEl = document.getElementById("play-result");
+        const answer =
+          document.getElementById("play-answer").value;
 
-      try {
-        const result = await apiFetch(
-          `${CONFIG.ROUTES.QUESTIONS}/${qId}/play`,
-          {
-            method: "POST",
-            body: JSON.stringify({ answer }),
+        const resultEl =
+          document.getElementById("play-result");
+
+        try {
+          const result = await apiFetch(
+            `${CONFIG.ROUTES.QUESTIONS}/${qId}/play`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                answer,
+              }),
+            }
+          );
+
+          if (result.correct) {
+            resultEl.innerHTML = `
+              <div class="play-result correct">
+                ✅ Correct!
+              </div>
+            `;
+
+            saveScore(1);
+          } else {
+            resultEl.innerHTML = `
+              <div class="play-result incorrect">
+                ❌ Incorrect
+                <br><br>
+                Correct answer:
+                <strong>
+                  ${result.correctAnswer}
+                </strong>
+              </div>
+            `;
           }
-        );
-
-        resultEl.innerHTML = result.correct
-          ? `<div class="play-result correct">✅ Correct!</div>`
-          : `<div class="play-result incorrect">❌ Incorrect<br><strong>${result.correctAnswer}</strong></div>`;
-
-        if (result.correct) saveScore(1);
-      } catch (err) {
-        resultEl.innerHTML = `<p class="error">${err.message}</p>`;
-      }
-    });
+        } catch (err) {
+          resultEl.innerHTML = `
+            <p class="error">
+              ${err.message}
+            </p>
+          `;
+        }
+      });
   } catch (err) {
-    container.innerHTML = `<p class="error">${err.message}</p>`;
+    container.innerHTML = `
+      <p class="error">
+        ${err.message}
+      </p>
+    `;
   }
 }
 
 // --- LEADERBOARD ---
 function saveScore(score) {
-  const scores = JSON.parse(localStorage.getItem("leaderboard")) || [];
+  const scores =
+    JSON.parse(
+      localStorage.getItem("leaderboard")
+    ) || [];
 
-  scores.push({ score, date: new Date().toLocaleDateString() });
+  scores.push({
+    score,
+    date: new Date().toLocaleDateString(),
+  });
+
   scores.sort((a, b) => b.score - a.score);
 
-  localStorage.setItem("leaderboard", JSON.stringify(scores));
+  localStorage.setItem(
+    "leaderboard",
+    JSON.stringify(scores)
+  );
+
   renderLeaderboard();
 }
 
 function renderLeaderboard() {
-  const container = document.getElementById("leaderboard");
+  const container =
+    document.getElementById("leaderboard");
+
   if (!container) return;
 
-  const scores = JSON.parse(localStorage.getItem("leaderboard")) || [];
+  const scores =
+    JSON.parse(
+      localStorage.getItem("leaderboard")
+    ) || [];
 
   container.innerHTML = scores.length
     ? scores
@@ -392,7 +622,11 @@ function renderLeaderboard() {
       `
         )
         .join("")
-    : `<div class="empty-state">No scores yet</div>`;
+    : `
+      <div class="empty-state">
+        No scores yet
+      </div>
+    `;
 }
 
 // --- LOGOUT ---
@@ -402,9 +636,20 @@ function handleLogout() {
 }
 
 // --- INIT ---
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("logout-btn").addEventListener("click", handleLogout);
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    document
+      .getElementById("logout-btn")
+      .addEventListener(
+        "click",
+        handleLogout
+      );
 
-  if (getToken()) showApp();
-  else showAuth();
-});
+    if (getToken()) {
+      showApp();
+    } else {
+      showAuth();
+    }
+  }
+);
