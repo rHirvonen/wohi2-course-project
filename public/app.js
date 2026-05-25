@@ -242,7 +242,7 @@ async function loadQuestions() {
             q.imageUrl
               ? `
             <img
-              src="${CONFIG.API_URL}${q.imageUrl}"
+              src="${q.imageUrl}"
               alt="Question image"
               style="
                 width:100%;
@@ -547,7 +547,7 @@ async function playQuestion(qId) {
           q.imageUrl
             ? `
           <img
-            src="${CONFIG.API_URL}${q.imageUrl}"
+            src="${q.imageUrl}"
             alt="Question image"
             style="
               width:100%;
