@@ -6,7 +6,11 @@ const prisma = require("../lib/prisma");
 const upload = require("../middleware/upload");
 const authenticate = require("../middleware/auth");
 
-const { NotFoundError, UnauthorizedError } = require("../lib/errors");
+const {
+  NotFoundError,
+  UnauthorizedError,
+} = require("../lib/errors");
+
 const { z } = require("zod");
 
 function parseKeywords(keywords) {
@@ -31,7 +35,8 @@ function formatQuestion(question) {
     difficulty: question.difficulty || "easy",
     date: question.date,
     userId: question.userId,
-    keywords: question.keywords?.map((k) => k.name) || [],
+    keywords:
+      question.keywords?.map((k) => k.name) || [],
     userName: question.user?.name || null,
     attempts: question.attempts || [],
   };
@@ -51,6 +56,7 @@ const PostInput = z.object({
     .optional(),
 });
 
+// GET ALL QUESTIONS
 router.get("/", async (req, res, next) => {
   try {
     let page = parseInt(req.query.page, 10);
@@ -64,6 +70,7 @@ router.get("/", async (req, res, next) => {
 
     const where = {};
 
+    // FILTER BY KEYWORD
     if (req.query.keyword) {
       where.keywords = {
         some: {
@@ -72,21 +79,41 @@ router.get("/", async (req, res, next) => {
       };
     }
 
+    // FILTER BY DIFFICULTY
     if (req.query.difficulty) {
       where.difficulty = req.query.difficulty;
+    }
+
+    // SEARCH
+    if (req.query.search) {
+      where.OR = [
+        {
+          title: {
+            contains: req.query.search,
+          },
+        },
+        {
+          content: {
+            contains: req.query.search,
+          },
+        },
+      ];
     }
 
     const [questions, total] = await Promise.all([
       prisma.post.findMany({
         where,
+
         include: {
           keywords: true,
           user: true,
           attempts: true,
         },
+
         orderBy: {
           id: "asc",
         },
+
         skip,
         take: limit,
       }),
@@ -99,6 +126,7 @@ router.get("/", async (req, res, next) => {
       limit,
       total,
       totalPages: Math.ceil(total / limit),
+
       data: questions.map(formatQuestion),
     });
   } catch (err) {
@@ -106,6 +134,38 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// LEADERBOARD TOP 5
+router.get(
+  "/leaderboard/top",
+  async (req, res, next) => {
+    try {
+      const users = await prisma.user.findMany({
+        include: {
+          attempts: {
+            where: {
+              correct: true,
+            },
+          },
+        },
+      });
+
+      const leaderboard = users
+        .map((user) => ({
+          id: user.id,
+          name: user.name,
+          score: user.attempts.length,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      res.json(leaderboard);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET SINGLE QUESTION
 router.get("/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
@@ -121,7 +181,9 @@ router.get("/:id", async (req, res, next) => {
     });
 
     if (!post) {
-      throw new NotFoundError("Question not found");
+      throw new NotFoundError(
+        "Question not found"
+      );
     }
 
     res.json(formatQuestion(post));
@@ -130,10 +192,12 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
+// CREATE QUESTION
 router.post(
   "/",
   authenticate,
   upload.single("image"),
+
   async (req, res, next) => {
     try {
       const data = PostInput.parse(req.body);
@@ -143,7 +207,8 @@ router.post(
           title: data.question,
           content: data.answer,
 
-          difficulty: data.difficulty || "easy",
+          difficulty:
+            data.difficulty || "easy",
 
           userId: req.user.id,
 
@@ -174,67 +239,118 @@ router.post(
         },
       });
 
-      res.status(201).json(formatQuestion(created));
+      res
+        .status(201)
+        .json(formatQuestion(created));
     } catch (err) {
       next(err);
     }
   }
 );
 
-router.post("/:id/play", authenticate, async (req, res, next) => {
-  try {
-    const id = Number(req.params.id);
+// PLAY QUESTION
+router.post(
+  "/:id/play",
+  authenticate,
 
-    const { answer } = req.body;
-
-    const post = await prisma.post.findUnique({
-      where: { id },
-    });
-
-    if (!post) {
-      throw new NotFoundError("Question not found");
-    }
-
-    const isCorrect =
-      post.content.trim().toLowerCase() ===
-      answer?.trim().toLowerCase();
-
+  async (req, res, next) => {
     try {
-      await prisma.attempt.create({
-        data: {
-          userId: req.user.id,
-          postId: id,
-          correct: isCorrect,
-        },
-      });
-    } catch (err) {
-      if (err.code === "P2002") {
-        await prisma.attempt.update({
-          where: {
-            userId_postId: {
-              userId: req.user.id,
-              postId: id,
-            },
-          },
+      const id = Number(req.params.id);
 
+      const { answer } = req.body;
+
+      const post = await prisma.post.findUnique({
+        where: { id },
+      });
+
+      if (!post) {
+        throw new NotFoundError(
+          "Question not found"
+        );
+      }
+
+      const isCorrect =
+        post.content.trim().toLowerCase() ===
+        answer?.trim().toLowerCase();
+
+      try {
+        await prisma.attempt.create({
           data: {
+            userId: req.user.id,
+            postId: id,
             correct: isCorrect,
           },
         });
-      } else {
-        throw err;
+      } catch (err) {
+        // USER ALREADY ANSWERED
+        if (err.code === "P2002") {
+          await prisma.attempt.update({
+            where: {
+              userId_postId: {
+                userId: req.user.id,
+                postId: id,
+              },
+            },
+
+            data: {
+              correct: isCorrect,
+            },
+          });
+        } else {
+          throw err;
+        }
       }
+
+      res.json({
+        correct: isCorrect,
+        correctAnswer: post.content,
+      });
+    } catch (err) {
+      next(err);
     }
-
-    res.json({
-      correct: isCorrect,
-      correctAnswer: post.content,
-    });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
+// DELETE QUESTION
+router.delete(
+  "/:id",
+  authenticate,
+
+  async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+
+      const post = await prisma.post.findUnique({
+        where: { id },
+      });
+
+      if (!post) {
+        throw new NotFoundError(
+          "Question not found"
+        );
+      }
+
+      // ONLY OWNER CAN DELETE
+      if (post.userId !== req.user.id) {
+        throw new UnauthorizedError(
+          "Not allowed"
+        );
+      }
+
+      await prisma.post.delete({
+        where: { id },
+      });
+
+      res.json({
+        message: "Question deleted",
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ERROR HANDLER
 router.use((err, req, res, next) => {
   if (err instanceof z.ZodError) {
     return res.status(400).json({

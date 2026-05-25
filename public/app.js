@@ -1,5 +1,6 @@
 // --- State ---
 let isRegisterMode = false;
+let currentDifficulty = "";
 
 // --- Helpers ---
 function getCurrentUserId() {
@@ -175,7 +176,8 @@ async function showApp() {
   document.getElementById("app-section").style.display = "block";
   document.getElementById("logout-btn").style.display = "inline-block";
 
-  renderLeaderboard();
+  await renderLeaderboard();
+
   attachCreateButton();
 
   await loadQuestions();
@@ -192,11 +194,37 @@ async function loadQuestions() {
   `;
 
   try {
-    const result = await apiFetch(CONFIG.ROUTES.QUESTIONS);
+    let route = CONFIG.ROUTES.QUESTIONS;
+
+    if (currentDifficulty) {
+      route += `?difficulty=${currentDifficulty}`;
+    }
+
+    const result = await apiFetch(route);
 
     const questions = result.data || result;
 
-    let html = `<div class="questions-grid">`;
+    let html = `
+      <div style="margin-bottom:1.5rem; display:flex; gap:1rem; flex-wrap:wrap;">
+        <button class="btn btn-secondary filter-btn" data-difficulty="">
+          All
+        </button>
+
+        <button class="btn btn-secondary filter-btn" data-difficulty="easy">
+          Easy
+        </button>
+
+        <button class="btn btn-secondary filter-btn" data-difficulty="medium">
+          Medium
+        </button>
+
+        <button class="btn btn-secondary filter-btn" data-difficulty="hard">
+          Hard
+        </button>
+      </div>
+
+      <div class="questions-grid">
+    `;
 
     if (!questions.length) {
       html += `
@@ -247,6 +275,19 @@ async function loadQuestions() {
             >
               Play Quiz
             </button>
+
+            ${
+              q.userId === getCurrentUserId()
+                ? `
+              <button
+                class="btn btn-secondary btn-delete"
+                data-id="${q.id}"
+              >
+                Delete
+              </button>
+            `
+                : ""
+            }
           </div>
 
         </article>
@@ -259,10 +300,40 @@ async function loadQuestions() {
 
     container.innerHTML = html;
 
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentDifficulty = btn.dataset.difficulty;
+        loadQuestions();
+      });
+    });
+
     container.querySelectorAll(".btn-play").forEach((el) => {
       el.addEventListener("click", () =>
         playQuestion(el.dataset.id)
       );
+    });
+
+    container.querySelectorAll(".btn-delete").forEach((el) => {
+      el.addEventListener("click", async () => {
+        const confirmed = confirm(
+          "Delete this question?"
+        );
+
+        if (!confirmed) return;
+
+        try {
+          await apiFetch(
+            `${CONFIG.ROUTES.QUESTIONS}/${el.dataset.id}`,
+            {
+              method: "DELETE",
+            }
+          );
+
+          loadQuestions();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
     });
   } catch (err) {
     container.innerHTML = `
@@ -581,7 +652,7 @@ async function playQuestion(qId) {
               </div>
             `;
 
-            saveScore(1);
+            renderLeaderboard();
           } else {
             resultEl.innerHTML = `
               <div class="play-result incorrect">
@@ -612,56 +683,41 @@ async function playQuestion(qId) {
 }
 
 // --- LEADERBOARD ---
-function saveScore(score) {
-  const scores =
-    JSON.parse(
-      localStorage.getItem("leaderboard")
-    ) || [];
-
-  scores.push({
-    score,
-    date: new Date().toLocaleDateString(),
-  });
-
-  scores.sort((a, b) => b.score - a.score);
-
-  localStorage.setItem(
-    "leaderboard",
-    JSON.stringify(scores)
-  );
-
-  renderLeaderboard();
-}
-
-function renderLeaderboard() {
+async function renderLeaderboard() {
   const container =
     document.getElementById("leaderboard");
 
   if (!container) return;
 
-  const scores =
-    JSON.parse(
-      localStorage.getItem("leaderboard")
-    ) || [];
+  try {
+    const users = await apiFetch(
+      "/questions/leaderboard/top"
+    );
 
-  container.innerHTML = scores.length
-    ? scores
-        .slice(0, 10)
-        .map(
-          (s, i) => `
-        <div class="leaderboard-item">
-          <span>#${i + 1}</span>
-          <span>${s.score} pts</span>
-          <span>${s.date}</span>
+    container.innerHTML = users.length
+      ? users
+          .map(
+            (u, i) => `
+          <div class="leaderboard-item">
+            <span>#${i + 1}</span>
+            <span>${u.name}</span>
+            <span>${u.score} pts</span>
+          </div>
+        `
+          )
+          .join("")
+      : `
+        <div class="empty-state">
+          No scores yet
         </div>
-      `
-        )
-        .join("")
-    : `
+      `;
+  } catch (err) {
+    container.innerHTML = `
       <div class="empty-state">
-        No scores yet
+        Failed to load leaderboard
       </div>
     `;
+  }
 }
 
 // --- LOGOUT ---
