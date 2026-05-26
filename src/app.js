@@ -7,10 +7,12 @@ const logger = require("./lib/logger");
 const authRouter = require("./routes/auth");
 const questionsRouter = require("./routes/questions");
 
-
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
+
+// TRUST RAILWAY PROXY
+app.set("trust proxy", 1);
 
 // Paths
 const publicPath = path.resolve(
@@ -23,6 +25,7 @@ const publicPath = path.resolve(
 app.use(
   pinoHttp({
     logger,
+
     autoLogging: {
       ignore: (req) =>
         req.url.startsWith("/uploads"),
@@ -36,7 +39,12 @@ app.use(express.json());
 // Static files
 app.use(express.static(publicPath));
 
-app.use("/uploads", express.static("uploads"));
+app.use(
+  "/uploads",
+  express.static(
+    path.join(__dirname, "..", "uploads")
+  )
+);
 
 // API Routes
 app.use("/api/auth", authRouter);
@@ -45,7 +53,6 @@ app.use(
   "/api/questions",
   questionsRouter
 );
-
 
 // Health check
 app.get("/api/health", (req, res) => {
