@@ -47,7 +47,9 @@ function formatQuestion(question, req) {
 
     userName: question.user?.name || null,
 
-    attempts: question.attempts?.length || 0,
+    attempts: Array.isArray(question.attempts)
+    ? question.attempts
+    : [],
   };
 }
 
@@ -75,27 +77,40 @@ router.get(
   "/leaderboard/top",
   async (req, res, next) => {
     try {
-      const users = await prisma.user.findMany({
-        include: {
-          attempts: {
-            where: {
-              correct: true,
-            },
+      const attempts =
+        await prisma.attempt.findMany({
+          where: {
+            correct: true,
           },
-        },
+
+          include: {
+            user: true,
+          },
+        });
+
+      const scores = {};
+
+      attempts.forEach((a) => {
+        if (!a.user) return;
+
+        if (!scores[a.user.id]) {
+          scores[a.user.id] = {
+            id: a.user.id,
+            name: a.user.name,
+            score: 0,
+          };
+        }
+
+        scores[a.user.id].score += 1;
       });
 
-      const leaderboard = users
-        .map((user) => ({
-          id: user.id,
-          name: user.name,
-          score: user.attempts.length,
-        }))
+      const leaderboard = Object.values(scores)
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
 
       res.json(leaderboard);
     } catch (err) {
+      console.error(err);
       next(err);
     }
   }
