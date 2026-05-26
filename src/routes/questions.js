@@ -26,25 +26,36 @@ function parseKeywords(keywords) {
   return [];
 }
 
-function formatQuestion(question) {
+function formatQuestion(question, req) {
   return {
     id: question.id,
     question: question.title,
     answer: question.content,
-    imageUrl: question.imageUrl,
+
+    imageUrl: question.imageUrl
+      ? `${req.protocol}://${req.get("host")}${question.imageUrl}`
+      : null,
+
     difficulty: question.difficulty || "easy",
+
     date: question.date,
+
     userId: question.userId,
+
     keywords:
       question.keywords?.map((k) => k.name) || [],
+
     userName: question.user?.name || null,
-    attempts: question.attempts || [],
+
+    attempts: question.attempts?.length || 0,
   };
 }
 
 const PostInput = z.object({
   question: z.string().min(1),
+
   answer: z.string().min(1),
+
   date: z.string().min(1),
 
   difficulty: z
@@ -56,7 +67,44 @@ const PostInput = z.object({
     .optional(),
 });
 
+// ======================
+// LEADERBOARD TOP 5
+// ======================
+
+router.get(
+  "/leaderboard/top",
+  async (req, res, next) => {
+    try {
+      const users = await prisma.user.findMany({
+        include: {
+          attempts: {
+            where: {
+              correct: true,
+            },
+          },
+        },
+      });
+
+      const leaderboard = users
+        .map((user) => ({
+          id: user.id,
+          name: user.name,
+          score: user.attempts.length,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      res.json(leaderboard);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ======================
 // GET ALL QUESTIONS
+// ======================
+
 router.get("/", async (req, res, next) => {
   try {
     let page = parseInt(req.query.page, 10);
@@ -127,45 +175,19 @@ router.get("/", async (req, res, next) => {
       total,
       totalPages: Math.ceil(total / limit),
 
-      data: questions.map(formatQuestion),
+      data: questions.map((q) =>
+        formatQuestion(q, req)
+      ),
     });
   } catch (err) {
     next(err);
   }
 });
 
-// LEADERBOARD TOP 5
-router.get(
-  "/leaderboard/top",
-  async (req, res, next) => {
-    try {
-      const users = await prisma.user.findMany({
-        include: {
-          attempts: {
-            where: {
-              correct: true,
-            },
-          },
-        },
-      });
-
-      const leaderboard = users
-        .map((user) => ({
-          id: user.id,
-          name: user.name,
-          score: user.attempts.length,
-        }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
-
-      res.json(leaderboard);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
+// ======================
 // GET SINGLE QUESTION
+// ======================
+
 router.get("/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
@@ -186,13 +208,16 @@ router.get("/:id", async (req, res, next) => {
       );
     }
 
-    res.json(formatQuestion(post));
+    res.json(formatQuestion(post, req));
   } catch (err) {
     next(err);
   }
 });
 
+// ======================
 // CREATE QUESTION
+// ======================
+
 router.post(
   "/",
   authenticate,
@@ -205,6 +230,7 @@ router.post(
       const created = await prisma.post.create({
         data: {
           title: data.question,
+
           content: data.answer,
 
           difficulty:
@@ -236,19 +262,23 @@ router.post(
         include: {
           keywords: true,
           user: true,
+          attempts: true,
         },
       });
 
       res
         .status(201)
-        .json(formatQuestion(created));
+        .json(formatQuestion(created, req));
     } catch (err) {
       next(err);
     }
   }
 );
 
+// ======================
 // PLAY QUESTION
+// ======================
+
 router.post(
   "/:id/play",
   authenticate,
@@ -271,7 +301,7 @@ router.post(
 
       const isCorrect =
         post.content.trim().toLowerCase() ===
-        answer?.trim().toLowerCase();
+        (answer || "").trim().toLowerCase();
 
       try {
         await prisma.attempt.create({
@@ -311,7 +341,10 @@ router.post(
   }
 );
 
+// ======================
 // DELETE QUESTION
+// ======================
+
 router.delete(
   "/:id",
   authenticate,
@@ -350,7 +383,10 @@ router.delete(
   }
 );
 
+// ======================
 // ERROR HANDLER
+// ======================
+
 router.use((err, req, res, next) => {
   if (err instanceof z.ZodError) {
     return res.status(400).json({
