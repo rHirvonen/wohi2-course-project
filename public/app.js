@@ -242,7 +242,7 @@ async function loadQuestions() {
             q.imageUrl
               ? `
             <img
-              src="${q.imageUrl}"
+              src="${CONFIG.API_URL}${q.imageUrl}"
               alt="Question image"
               style="
                 width:100%;
@@ -266,6 +266,16 @@ async function loadQuestions() {
             "
           >
             Difficulty: ${q.difficulty}
+          </p>
+
+          <p
+            style="
+              margin-top:0.4rem;
+              color:#aaa;
+              font-size:0.9rem;
+            "
+          >
+            Attempts: ${q.attempts ? q.attempts.length : 0}
           </p>
 
           <div class="question-actions">
@@ -547,7 +557,7 @@ async function playQuestion(qId) {
           q.imageUrl
             ? `
           <img
-            src="${q.imageUrl}"
+            src="${CONFIG.API_URL}${q.imageUrl}"
             alt="Question image"
             style="
               width:100%;
@@ -690,28 +700,47 @@ async function renderLeaderboard() {
   if (!container) return;
 
   try {
-    const users = await apiFetch(
+    const result = await apiFetch(
       "/questions/leaderboard/top"
     );
 
-    container.innerHTML = users.length
-      ? users
-          .map(
-            (u, i) => `
-          <div class="leaderboard-item">
-            <span>#${i + 1}</span>
-            <span>${u.name}</span>
-            <span>${u.score} pts</span>
-          </div>
-        `
-          )
-          .join("")
-      : `
+    const users = Array.isArray(result)
+      ? result
+      : result.data || [];
+
+    if (!users.length) {
+      container.innerHTML = `
         <div class="empty-state">
           No scores yet
         </div>
       `;
+      return;
+    }
+
+    container.innerHTML = users
+      .map(
+        (u, i) => `
+          <div class="leaderboard-item">
+
+            <span class="leaderboard-rank">
+              #${i + 1}
+            </span>
+
+            <span>
+              ${u.name}
+            </span>
+
+            <span class="leaderboard-score">
+              ${u.score} pts
+            </span>
+
+          </div>
+        `
+      )
+      .join("");
   } catch (err) {
+    console.error(err);
+
     container.innerHTML = `
       <div class="empty-state">
         Failed to load leaderboard
