@@ -701,7 +701,7 @@ async function renderLeaderboard() {
 
   try {
     const result = await apiFetch(
-      "/questions/leaderboard/top"
+      `${CONFIG.ROUTES.QUESTIONS}/leaderboard/top`
     );
 
     const users = Array.isArray(result)
