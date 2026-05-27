@@ -84,9 +84,6 @@ const PostInput = z.object({
     .optional(),
 });
 
-// =====================================
-// LEADERBOARD TOP 5
-// =====================================
 
 router.get(
   "/leaderboard/top",
@@ -138,9 +135,6 @@ router.get(
   }
 );
 
-// =====================================
-// GET ALL QUESTIONS
-// =====================================
 
 router.get(
   "/",
@@ -176,7 +170,7 @@ router.get(
 
       const where = {};
 
-      // FILTER BY KEYWORD
+      
       if (req.query.keyword) {
         where.keywords = {
           some: {
@@ -185,7 +179,7 @@ router.get(
         };
       }
 
-      // FILTER BY DIFFICULTY
+      
       if (req.query.difficulty) {
         where.difficulty =
           req.query.difficulty;
@@ -252,9 +246,7 @@ router.get(
   }
 );
 
-// =====================================
-// GET SINGLE QUESTION
-// =====================================
+
 
 router.get(
   "/:id",
@@ -290,9 +282,7 @@ router.get(
   }
 );
 
-// =====================================
-// CREATE QUESTION
-// =====================================
+
 
 router.post(
   "/",
@@ -365,9 +355,7 @@ router.post(
   }
 );
 
-// =====================================
-// PLAY QUESTION
-// =====================================
+
 
 router.post(
   "/:id/play",
@@ -452,9 +440,6 @@ router.post(
   }
 );
 
-// =====================================
-// DELETE QUESTION
-// =====================================
 
 router.delete(
   "/:id",
@@ -500,9 +485,7 @@ router.delete(
   }
 );
 
-// =====================================
-// ERROR HANDLER
-// =====================================
+
 
 router.use(
   (err, req, res, next) => {
